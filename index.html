@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFF8E7">
+<title>🐣 Kyllingjakt</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+:root { --cream:#FFF8E7; --brown:#7A4F2D; --sh:rgba(122,79,45,0.18); }
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  font-family:'Nunito',sans-serif;
+  background:var(--cream);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before {
+  content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle,#FFD93D33 2px,transparent 2px),radial-gradient(circle,#FF87AB33 2px,transparent 2px);
+  background-size:40px 40px,60px 60px;background-position:0 0,20px 20px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 20px 80px;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* ── HOME ── */
+.home-chick{font-size:76px;animation:float 3s ease-in-out infinite;margin-bottom:6px;}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-12px) rotate(3deg);}}
+h1{font-family:'Fredoka One',cursive;font-size:2.9rem;color:var(--brown);line-height:1;margin-bottom:5px;text-shadow:3px 3px 0 #FFD93D;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.subtitle{font-size:1rem;color:#a07850;font-weight:600;margin-bottom:22px;text-align:center;}
+
+.chicken-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:340px;margin-bottom:26px;}
+.chicken-card{background:white;border-radius:20px;padding:14px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 16px var(--sh);border:3px solid #eee;transition:all 0.4s;position:relative;}
+.chicken-card.found{border-color:#6BCB77;background:linear-gradient(135deg,#f0fff4,#fff);}
+.chicken-card.found::after{content:'✓';position:absolute;top:6px;right:10px;font-size:1.3rem;color:#6BCB77;font-weight:900;}
+.chicken-card svg{width:72px;height:72px;}
+.cname{font-size:0.82rem;font-weight:800;color:var(--brown);}
+.cstatus{font-size:0.67rem;color:#bbb;font-weight:600;}
+.chicken-card.found .cstatus{color:#6BCB77;}
+
+.prog-wrap{width:100%;max-width:340px;background:#ffe8b0;border-radius:50px;height:18px;overflow:hidden;margin-bottom:8px;box-shadow:inset 0 2px 6px rgba(0,0,0,0.08);}
+.prog-fill{height:100%;background:linear-gradient(90deg,#FFD93D,#FF6B35);border-radius:50px;transition:width 0.6s cubic-bezier(.34,1.56,.64,1);}
+.prog-text{font-size:0.9rem;color:#a07850;font-weight:700;margin-bottom:22px;}
+
+.btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FFD93D,#FF6B35);color:white;font-family:'Fredoka One',cursive;font-size:1.2rem;border:none;border-radius:50px;padding:15px 34px;cursor:pointer;box-shadow:0 6px 20px rgba(255,107,53,0.35);transition:all 0.2s;-webkit-tap-highlight-color:transparent;}
+.btn:active{transform:scale(0.97);}
+.btn.sec{background:white;color:var(--brown);box-shadow:0 4px 14px var(--sh);font-size:1rem;padding:12px 28px;}
+
+.grass{position:fixed;bottom:0;left:0;right:0;height:58px;background:linear-gradient(to bottom,#6BCB77,#4aab57);border-radius:50% 50% 0 0/28px 28px 0 0;z-index:0;}
+.grass::before{content:'🌱🌿🌱🌿🌱🌿🌱🌿🌱🌿🌱🌿🌱';position:absolute;top:-13px;left:0;right:0;font-size:20px;letter-spacing:-2px;text-align:center;}
+
+/* ── CAMERA SCREEN ── */
+#screen-cam{background:#0d0d1a;padding:0;justify-content:flex-start;}
+.cam-top{position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(to bottom,rgba(13,13,26,0.96),transparent);padding:22px 20px 48px;text-align:center;}
+.cam-title{font-family:'Fredoka One',cursive;font-size:1.45rem;color:white;margin-bottom:3px;}
+.cam-hint{color:rgba(255,255,255,0.6);font-size:0.82rem;font-weight:600;}
+
+#video-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+#video{width:100%;height:100%;object-fit:cover;}
+
+/* viewfinder */
+.viewfinder{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;}
+.vf-ring{width:200px;height:200px;border-radius:50%;border:4px solid rgba(255,211,61,0.9);box-shadow:0 0 0 4000px rgba(0,0,0,0.45);position:relative;}
+.vf-ring::before,.vf-ring::after{content:'';position:absolute;top:50%;left:50%;width:20px;height:4px;background:#FFD93D;border-radius:2px;}
+.vf-ring::before{transform:translate(-50%,-50%);}
+.vf-ring::after{transform:translate(-50%,-50%) rotate(90deg);}
+.vf-label{color:white;font-family:'Fredoka One',cursive;font-size:1.1rem;text-shadow:0 2px 8px rgba(0,0,0,0.8);background:rgba(0,0,0,0.4);padding:8px 20px;border-radius:50px;}
+
+.cam-bottom{position:fixed;bottom:0;left:0;right:0;z-index:20;background:linear-gradient(to top,rgba(13,13,26,0.96),transparent);padding:40px 20px 32px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.snap-btn{width:70px;height:70px;border-radius:50%;background:white;border:5px solid #FFD93D;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.4);-webkit-tap-highlight-color:transparent;transition:transform 0.15s;}
+.snap-btn:active{transform:scale(0.9);}
+.snap-inner{width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#FFD93D,#FF6B35);}
+
+<canvas id="canvas" style="display:none"></canvas>
+
+/* ── RESULT overlay (shown in camera screen) ── */
+.result-overlay{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:32px 24px;background:rgba(255,248,231,0.97);}
+.result-overlay.show{display:flex;}
+.result-chick-wrap{animation:popIn 0.5s cubic-bezier(.34,1.56,.64,1);}
+.result-chick-wrap svg{width:120px;height:120px;}
+@keyframes popIn{from{transform:scale(0) rotate(-20deg);opacity:0;}to{transform:scale(1);opacity:1;}}
+.result-title{font-family:'Fredoka One',cursive;font-size:2.2rem;color:var(--brown);text-shadow:2px 2px 0 #FFD93D;}
+.result-desc{font-size:1rem;color:#a07850;font-weight:700;}
+.result-count{background:white;border-radius:50px;padding:10px 26px;font-size:1.05rem;font-weight:800;color:var(--brown);box-shadow:0 4px 14px var(--sh);}
+.result-count span{color:#FF6B35;}
+
+/* error state */
+.result-overlay.error .result-title{color:#c0392b;}
+.result-overlay.error .result-chick-wrap svg{filter:saturate(0);}
+
+/* ── DONE ── */
+#screen-done{gap:16px;text-align:center;padding-bottom:48px;}
+.done-map{font-size:5rem;animation:sway 2s ease-in-out infinite alternate;}
+@keyframes sway{from{transform:rotate(-6deg) scale(1);}to{transform:rotate(6deg) scale(1.08);}}
+.done-title{font-family:'Fredoka One',cursive;font-size:2.5rem;color:var(--brown);text-shadow:3px 3px 0 #FFD93D;}
+.done-sub{color:#a07850;font-weight:600;font-size:0.95rem;max-width:300px;}
+.chick-row{display:flex;gap:8px;justify-content:center;}
+.chick-row svg{width:54px;height:54px;}
+
+.kodeord-box{background:#fffbef;border:3px dashed #FFD93D;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 6px 24px var(--sh);}
+.kodeord-box .klabel{font-size:0.75rem;font-weight:800;color:#a07850;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:10px;}
+.kword{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--brown);line-height:1.2;margin-bottom:12px;word-break:break-word;}
+.khint{font-size:0.9rem;color:var(--brown);font-weight:700;background:#FFD93D55;border-radius:14px;padding:10px 16px;display:inline-block;}
+
+/* confetti */
+.conf-wrap{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.cp{position:absolute;border-radius:2px;animation:fall linear forwards;}
+@keyframes fall{0%{transform:translateY(-10px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+
+/* toast */
+.toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(16px);background:#2d2d2d;color:white;padding:12px 24px;border-radius:50px;font-size:0.9rem;font-weight:700;opacity:0;transition:all 0.3s;z-index:200;white-space:nowrap;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* admin */
+#admin-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;align-items:center;justify-content:center;}
+.adm{background:white;border-radius:24px;padding:32px 24px;width:90%;max-width:400px;text-align:center;}
+.adm h2{font-family:'Fredoka One',cursive;color:var(--brown);margin-bottom:20px;font-size:1.7rem;}
+.adm-f{margin-bottom:14px;text-align:left;}
+.adm-f label{font-size:0.78rem;font-weight:800;color:#a07850;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;}
+.adm-f input{width:100%;border:2px solid #ffe8b0;border-radius:12px;padding:10px 14px;font-family:'Nunito',sans-serif;font-size:1rem;color:var(--brown);outline:none;}
+.adm-f input:focus{border-color:#FFD93D;}
+.adm-save{background:linear-gradient(135deg,#FFD93D,#FF6B35);color:white;border:none;border-radius:50px;padding:14px 0;font-family:'Fredoka One',cursive;font-size:1.15rem;cursor:pointer;width:100%;margin-bottom:10px;}
+.adm-close{background:none;border:none;color:#bbb;font-size:0.9rem;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;}
+.adm-reset{background:#FF6B35;color:white;border:none;border-radius:12px;padding:9px 18px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SVG KYLLINGER (gjemte definisjoner) ══════════ -->
+<svg style="display:none">
+<defs>
+  <!-- GUL -->
+  <symbol id="chk-gul" viewBox="0 0 120 175">
+    <ellipse cx="60" cy="108" rx="50" ry="43" fill="#FFD700"/>
+    <circle cx="60" cy="60" r="33" fill="#FFD700"/>
+    <ellipse cx="18" cy="106" rx="14" ry="25" fill="#D4A800" transform="rotate(-18,18,106)"/>
+    <ellipse cx="102" cy="106" rx="14" ry="25" fill="#D4A800" transform="rotate(18,102,106)"/>
+    <circle cx="50" cy="54" r="8" fill="white"/>
+    <circle cx="51" cy="55" r="4.5" fill="#1a1a1a"/>
+    <circle cx="53" cy="53" r="2" fill="white"/>
+    <polygon points="60,68 50,78 70,78" fill="#FF8C00"/>
+    <ellipse cx="45" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(-20,45,30)"/>
+    <ellipse cx="60" cy="25" rx="8" ry="14" fill="#FF4500"/>
+    <ellipse cx="75" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(20,75,30)"/>
+    <line x1="46" y1="149" x2="36" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="23" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="34" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="49" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="74" y1="149" x2="84" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="71" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="86" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="97" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <!-- ROSA -->
+  <symbol id="chk-rosa" viewBox="0 0 120 175">
+    <ellipse cx="60" cy="108" rx="50" ry="43" fill="#FF8FAB"/>
+    <circle cx="60" cy="60" r="33" fill="#FF8FAB"/>
+    <ellipse cx="18" cy="106" rx="14" ry="25" fill="#C4546E" transform="rotate(-18,18,106)"/>
+    <ellipse cx="102" cy="106" rx="14" ry="25" fill="#C4546E" transform="rotate(18,102,106)"/>
+    <circle cx="50" cy="54" r="8" fill="white"/>
+    <circle cx="51" cy="55" r="4.5" fill="#1a1a1a"/>
+    <circle cx="53" cy="53" r="2" fill="white"/>
+    <polygon points="60,68 50,78 70,78" fill="#FF4500"/>
+    <ellipse cx="45" cy="30" rx="8" ry="12" fill="#FF6B6B" transform="rotate(-20,45,30)"/>
+    <ellipse cx="60" cy="25" rx="8" ry="14" fill="#FF6B6B"/>
+    <ellipse cx="75" cy="30" rx="8" ry="12" fill="#FF6B6B" transform="rotate(20,75,30)"/>
+    <line x1="46" y1="149" x2="36" y2="168" stroke="#FF6347" stroke-width="5" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="23" y2="172" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="34" y2="175" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="49" y2="175" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+    <line x1="74" y1="149" x2="84" y2="168" stroke="#FF6347" stroke-width="5" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="71" y2="172" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="86" y2="175" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="97" y2="172" stroke="#FF6347" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <!-- GRØNN -->
+  <symbol id="chk-gronn" viewBox="0 0 120 175">
+    <ellipse cx="60" cy="108" rx="50" ry="43" fill="#43A047"/>
+    <circle cx="60" cy="60" r="33" fill="#43A047"/>
+    <ellipse cx="18" cy="106" rx="14" ry="25" fill="#1B5E20" transform="rotate(-18,18,106)"/>
+    <ellipse cx="102" cy="106" rx="14" ry="25" fill="#1B5E20" transform="rotate(18,102,106)"/>
+    <circle cx="50" cy="54" r="8" fill="white"/>
+    <circle cx="51" cy="55" r="4.5" fill="#1a1a1a"/>
+    <circle cx="53" cy="53" r="2" fill="white"/>
+    <polygon points="60,68 50,78 70,78" fill="#FF8C00"/>
+    <ellipse cx="45" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(-20,45,30)"/>
+    <ellipse cx="60" cy="25" rx="8" ry="14" fill="#FF4500"/>
+    <ellipse cx="75" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(20,75,30)"/>
+    <line x1="46" y1="149" x2="36" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="23" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="34" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="49" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="74" y1="149" x2="84" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="71" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="86" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="97" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <!-- BLÅ -->
+  <symbol id="chk-blaa" viewBox="0 0 120 175">
+    <ellipse cx="60" cy="108" rx="50" ry="43" fill="#2196F3"/>
+    <circle cx="60" cy="60" r="33" fill="#2196F3"/>
+    <ellipse cx="18" cy="106" rx="14" ry="25" fill="#0D47A1" transform="rotate(-18,18,106)"/>
+    <ellipse cx="102" cy="106" rx="14" ry="25" fill="#0D47A1" transform="rotate(18,102,106)"/>
+    <circle cx="50" cy="54" r="8" fill="white"/>
+    <circle cx="51" cy="55" r="4.5" fill="#1a1a1a"/>
+    <circle cx="53" cy="53" r="2" fill="white"/>
+    <polygon points="60,68 50,78 70,78" fill="#FF8C00"/>
+    <ellipse cx="45" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(-20,45,30)"/>
+    <ellipse cx="60" cy="25" rx="8" ry="14" fill="#FF4500"/>
+    <ellipse cx="75" cy="30" rx="8" ry="12" fill="#FF4500" transform="rotate(20,75,30)"/>
+    <line x1="46" y1="149" x2="36" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="23" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="34" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="36" y1="168" x2="49" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="74" y1="149" x2="84" y2="168" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="71" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="86" y2="175" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+    <line x1="84" y1="168" x2="97" y2="172" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+</defs>
+</svg>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="screen active" id="screen-home">
+  <div class="home-chick">🐣</div>
+  <h1 id="home-title">Kyllingjakt!</h1>
+  <p class="subtitle">Finn alle 4 påskekyllingene 🌸</p>
+  <div class="chicken-grid" id="chicken-grid"></div>
+  <div class="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <p class="prog-text" id="prog-text">0 / 4 funnet</p>
+  <button class="btn" onclick="openCamera()">📷 Finn en kylling</button>
+  <div class="grass"></div>
+</div>
+
+<!-- ══════════ KAMERA ══════════ -->
+<div class="screen" id="screen-cam">
+  <div id="video-wrap">
+    <video id="video" autoplay muted playsinline></video>
+  </div>
+
+  <div class="viewfinder">
+    <div class="vf-ring"></div>
+    <div class="vf-label" id="vf-label">Plasser kyllingen i sirkelen</div>
+  </div>
+
+  <div class="cam-top">
+    <div class="cam-title">🐣 Pek på en kylling</div>
+    <div class="cam-hint">Hold kyllingen innenfor sirkelen og trykk 📷</div>
+  </div>
+
+  <canvas id="canvas" style="display:none"></canvas>
+
+  <!-- Result overlay (vises oppå kamera etter bilde) -->
+  <div class="result-overlay" id="result-overlay">
+    <div class="conf-wrap" id="conf-result"></div>
+    <div class="result-chick-wrap" id="result-chick">
+      <svg width="120" height="120" viewBox="0 0 120 175"><use href="#chk-gul"/></svg>
+    </div>
+    <div class="result-title" id="result-title">Du fant en!</div>
+    <div class="result-desc" id="result-desc">Den gule kyllingen!</div>
+    <div class="result-count" id="result-count" style="display:none">Du har funnet <span id="result-num">1</span> av 4 🥚</div>
+    <button class="btn" id="result-btn" onclick="afterResult()">Fortsett jakten! →</button>
+  </div>
+
+  <div class="cam-bottom">
+    <button class="snap-btn" onclick="snapPhoto()" aria-label="Ta bilde">
+      <div class="snap-inner"></div>
+    </button>
+    <button class="btn sec" onclick="closeCamera()">← Tilbake</button>
+  </div>
+</div>
+
+<!-- ══════════ FERDIG ══════════ -->
+<div class="screen" id="screen-done">
+  <div class="conf-wrap" id="conf-done"></div>
+  <div class="done-map">🗺️</div>
+  <div class="done-title">Oppdrag fullført!</div>
+  <div class="done-sub">Du fant alle 4 kyllingene — nå er det tid for skattekartet!</div>
+  <div class="chick-row">
+    <svg viewBox="0 0 120 175"><use href="#chk-gul"/></svg>
+    <svg viewBox="0 0 120 175"><use href="#chk-rosa"/></svg>
+    <svg viewBox="0 0 120 175"><use href="#chk-gronn"/></svg>
+    <svg viewBox="0 0 120 175"><use href="#chk-blaa"/></svg>
+  </div>
+  <div class="kodeord-box">
+    <span class="klabel">🔑 Si dette til mamma:</span>
+    <div class="kword" id="kword">Kyllingen har landet</div>
+    <div class="khint" id="khint">Mamma gir deg skattekartet! 🗺️🥚</div>
+  </div>
+  <button class="btn sec" onclick="showHome()">← Se oversikt</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════ ADMIN ══════════ -->
+<div id="admin-panel">
+  <div class="adm">
+    <h2>⚙️ Innstillinger</h2>
+    <div class="adm-f">
+      <label>Kodeord barna sier til mamma</label>
+      <input type="text" id="adm-pw" placeholder="F.eks: Kyllingen har landet">
+    </div>
+    <div class="adm-f">
+      <label>Hint på slutt-skjermen</label>
+      <input type="text" id="adm-hint" placeholder="F.eks: Mamma gir deg skattekartet!">
+    </div>
+    <div class="adm-f">
+      <label>Nullstill all fremgang</label><br>
+      <button class="adm-reset" onclick="resetAll()">🔄 Nullstill alt</button>
+    </div>
+    <button class="adm-save" onclick="saveAdmin()">💾 Lagre</button><br>
+    <button class="adm-close" onclick="closeAdmin()">Lukk</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// KONFIGURASJON
+// ══════════════════════════════════════════════
+const CHICKENS = [
+  {
+    id: 'gul', name: 'Gul', symbol: 'chk-gul',
+    // HSL-fargerom for gjenkjenning
+    // H=gul: 40-65, S>40%, L=35-75%
+    match: (h,s,l) => h>=40 && h<=65 && s>=40 && l>=35 && l<=78
+  },
+  {
+    id: 'rosa', name: 'Rosa', symbol: 'chk-rosa',
+    // H=rosa/rød: 330-360 eller 0-15, S>35%, L=40-80%
+    match: (h,s,l) => ((h>=330 || h<=15)) && s>=35 && l>=40 && l<=80
+  },
+  {
+    id: 'gronn', name: 'Grønn', symbol: 'chk-gronn',
+    // H=grønn: 90-160, S>30%, L=25-65%
+    match: (h,s,l) => h>=90 && h<=160 && s>=30 && l>=25 && l<=65
+  },
+  {
+    id: 'blaa', name: 'Blå', symbol: 'chk-blaa',
+    // H=blå: 190-240, S>35%, L=30-70%
+    match: (h,s,l) => h>=190 && h<=240 && s>=35 && l>=30 && l<=70
+  },
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let found  = JSON.parse(localStorage.getItem('kyllingjakt_found')  || '[]');
+let config = JSON.parse(localStorage.getItem('kyllingjakt_config') || '{}');
+if (!config.password) config.password = 'Kyllingen har landet';
+if (!config.hint)     config.hint     = 'Mamma gir deg skattekartet! 🗺️🥚';
+
+let videoStream = null;
+let lastResult  = null; // chicken som ble funnet
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+renderHome();
+
+// Long-press på tittel → admin (1.5 sekunder)
+let pressTimer;
+const titleEl = document.getElementById('home-title');
+titleEl.addEventListener('pointerdown', () => { pressTimer = setTimeout(openAdmin, 1500); });
+titleEl.addEventListener('pointerup',   () => clearTimeout(pressTimer));
+titleEl.addEventListener('pointercancel',()=> clearTimeout(pressTimer));
+titleEl.addEventListener('pointerleave',() => clearTimeout(pressTimer));
+
+// ══════════════════════════════════════════════
+// RENDER HOME
+// ══════════════════════════════════════════════
+function chickenSVG(sym, w=72, h=72) {
+  return `<svg width="${w}" height="${h}" viewBox="0 0 120 175"><use href="#${sym}"/></svg>`;
+}
+
+function renderHome() {
+  const grid = document.getElementById('chicken-grid');
+  grid.innerHTML = '';
+  CHICKENS.forEach(c => {
+    const isFound = found.includes(c.id);
+    const card = document.createElement('div');
+    card.className = 'chicken-card' + (isFound ? ' found' : '');
+    card.innerHTML =
+      chickenSVG(c.symbol) +
+      `<div class="cname">${c.name}</div>` +
+      `<div class="cstatus">${isFound ? 'Funnet! ✓' : 'Ikke funnet ennå'}</div>`;
+    grid.appendChild(card);
+  });
+  const pct = (found.length / CHICKENS.length) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = `${found.length} / ${CHICKENS.length} funnet`;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showHome() { renderHome(); showScreen('screen-home'); }
+
+// ══════════════════════════════════════════════
+// KAMERA
+// ══════════════════════════════════════════════
+async function openCamera() {
+  document.getElementById('result-overlay').classList.remove('show', 'error');
+  document.getElementById('vf-label').textContent = 'Plasser kyllingen i sirkelen';
+  showScreen('screen-cam');
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    document.getElementById('video').srcObject = videoStream;
+  } catch(e) {
+    showToast('Kunne ikke starte kameraet — tillat kameratilgang i nettleseren');
+    showHome();
+  }
+}
+
+function closeCamera() {
+  stopStream();
+  showHome();
+}
+
+function stopStream() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+}
+
+// ══════════════════════════════════════════════
+// FARGEGJENKJENNING
+// ══════════════════════════════════════════════
+
+// RGB → HSL konvertering
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2-max-min) : d / (max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0)) / 6; break;
+      case g: h = ((b-r)/d + 2) / 6; break;
+      case b: h = ((r-g)/d + 4) / 6; break;
+    }
+  }
+  return [h*360, s*100, l*100];
+}
+
+// Analyser senterområdet av kamerabildeet
+function analyzeColor() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Analyser et sirkelsenter (midten ±15% av bredden)
+  const cx = canvas.width  / 2;
+  const cy = canvas.height / 2;
+  const r  = Math.min(canvas.width, canvas.height) * 0.14; // radius ~14% av korteste kant
+
+  // Samle piksler i sirkelen
+  const imgData = ctx.getImageData(cx-r, cy-r, r*2, r*2);
+  const pixels = imgData.data;
+
+  // Bygg histogram over farger
+  const votes = {};
+  CHICKENS.forEach(c => votes[c.id] = 0);
+  let totalPixels = 0;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const rr = pixels[i], gg = pixels[i+1], bb = pixels[i+2];
+    // Hopp over nesten-hvite, nesten-svarte og gråtoner (lav metning)
+    const [h, s, l] = rgbToHsl(rr, gg, bb);
+    if (s < 25 || l < 20 || l > 85) continue; // for grå/hvit/svart
+    totalPixels++;
+    CHICKENS.forEach(c => {
+      if (c.match(h, s, l)) votes[c.id]++;
+    });
+  }
+
+  if (totalPixels < 50) return null; // for få fargede piksler
+
+  // Finn vinneren
+  let best = null, bestVotes = 0;
+  CHICKENS.forEach(c => {
+    if (votes[c.id] > bestVotes) { bestVotes = votes[c.id]; best = c; }
+  });
+
+  // Krev at minst 18% av fargede piksler stemmer for én farge
+  const threshold = totalPixels * 0.18;
+  if (!best || bestVotes < threshold) return null;
+
+  return best;
+}
+
+function snapPhoto() {
+  const chicken = analyzeColor();
+
+  if (!chicken) {
+    showResultError('Ingen kylling funnet 🤔', 'Prøv å holde kyllingen tettere mot kameraet og trykk igjen');
+    return;
+  }
+
+  if (found.includes(chicken.id)) {
+    showResultError(
+      `Den ${chicken.name.toLowerCase()} kyllingen er allerede funnet! ✓`,
+      'Finn en annen kylling!'
+    );
+    return;
+  }
+
+  // Ny kylling funnet!
+  found.push(chicken.id);
+  localStorage.setItem('kyllingjakt_found', JSON.stringify(found));
+  lastResult = chicken;
+
+  if (found.length === CHICKENS.length) {
+    showResultSuccess(chicken, true);
+  } else {
+    showResultSuccess(chicken, false);
+  }
+}
+
+function showResultSuccess(chicken, isLast) {
+  const overlay = document.getElementById('result-overlay');
+  overlay.classList.remove('error');
+  document.getElementById('result-chick').innerHTML =
+    chickenSVG(chicken.symbol, 120, 120);
+  document.getElementById('result-title').textContent = 'Du fant en! 🎉';
+  document.getElementById('result-desc').textContent =
+    `Den ${chicken.name.toLowerCase()} kyllingen er samlet inn!`;
+
+  const countEl = document.getElementById('result-count');
+  countEl.style.display = 'block';
+  document.getElementById('result-num').textContent = found.length;
+
+  const btn = document.getElementById('result-btn');
+  if (isLast) {
+    btn.textContent = 'Se kodeordet! 🗺️';
+  } else {
+    btn.textContent = 'Fortsett jakten! →';
+  }
+
+  spawnConfetti('conf-result', 45);
+  overlay.classList.add('show');
+}
+
+function showResultError(title, desc) {
+  const overlay = document.getElementById('result-overlay');
+  overlay.classList.add('error');
+  document.getElementById('result-chick').innerHTML =
+    `<svg width="100" height="100" viewBox="0 0 120 175"><use href="#chk-gul"/></svg>`;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-desc').textContent = desc;
+  document.getElementById('result-count').style.display = 'none';
+  document.getElementById('result-btn').textContent = 'Prøv igjen';
+  overlay.classList.add('show');
+}
+
+function afterResult() {
+  const overlay = document.getElementById('result-overlay');
+  overlay.classList.remove('show', 'error');
+
+  if (found.length === CHICKENS.length) {
+    stopStream();
+    showDone();
+  }
+  // ellers: tilbake til kamera — barna kan fortsette å skanne
+}
+
+// ══════════════════════════════════════════════
+// FERDIG
+// ══════════════════════════════════════════════
+function showDone() {
+  document.getElementById('kword').textContent  = config.password;
+  document.getElementById('khint').textContent  = config.hint;
+  spawnConfetti('conf-done', 90);
+  showScreen('screen-done');
+}
+
+// ══════════════════════════════════════════════
+// KONFETTI
+// ══════════════════════════════════════════════
+function spawnConfetti(id, n) {
+  const wrap = document.getElementById(id);
+  wrap.innerHTML = '';
+  const cols = ['#FFD93D','#FF6B35','#6BCB77','#FF87AB','#42A5F5','#c084fc','#fb923c'];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('div');
+    el.className = 'cp';
+    const sz = 6 + Math.random()*9;
+    el.style.cssText =
+      `left:${Math.random()*100}%;` +
+      `top:${-10-Math.random()*20}px;` +
+      `width:${sz}px;height:${sz}px;` +
+      `background:${cols[Math.floor(Math.random()*cols.length)]};` +
+      `border-radius:${Math.random()>.5?'50%':'2px'};` +
+      `animation-duration:${1.6+Math.random()*2.4}s;` +
+      `animation-delay:${Math.random()*0.8}s;`;
+    wrap.appendChild(el);
+  }
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════
+function openAdmin() {
+  document.getElementById('adm-pw').value   = config.password;
+  document.getElementById('adm-hint').value = config.hint;
+  document.getElementById('admin-panel').style.display = 'flex';
+}
+function closeAdmin() {
+  document.getElementById('admin-panel').style.display = 'none';
+}
+function saveAdmin() {
+  config.password = document.getElementById('adm-pw').value   || 'Kyllingen har landet';
+  config.hint     = document.getElementById('adm-hint').value || 'Mamma gir deg skattekartet! 🗺️🥚';
+  localStorage.setItem('kyllingjakt_config', JSON.stringify(config));
+  closeAdmin();
+  showToast('Lagret! ✓');
+}
+function resetAll() {
+  if (confirm('Er du sikker? Dette sletter all fremgang for alle barna.')) {
+    found = [];
+    localStorage.removeItem('kyllingjakt_found');
+    closeAdmin();
+    showHome();
+    showToast('Fremgang nullstilt 🔄');
+  }
+}
+</script>
+</body>
+</html>
